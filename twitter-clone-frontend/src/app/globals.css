@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+:root {
+  --font-geist: 'Geist', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-geist), Arial, sans-serif;
+}
+
+/* Scrollbar custom */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 2px;
+}
