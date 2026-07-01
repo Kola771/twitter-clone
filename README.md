@@ -268,5 +268,5 @@ L'application est accessible sur `http://localhost:3000`.
 - [x] Navigation responsive (desktop + mobile)
 - [x] Modification de profil
 - [ ] Déploiement (Vercel + Railway/Render)
-- [ ] Notifications en temps réel (WebSocket)
+- [x] Notifications en temps réel (WebSocket)
 - [ ] Messages directs
