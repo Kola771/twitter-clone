@@ -27,6 +27,11 @@ export class TweetsController {
     return this.tweets.search(q ?? '', user.id);
   }
 
+  @Get('trends')
+  trends() {
+    return this.tweets.getTrends();
+  }
+
   @Get('user/:username')
   userTweets(@Param('username') username: string, @CurrentUser() user: { id: string }) {
     return this.tweets.getUserTweets(username, user.id);

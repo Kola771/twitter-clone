@@ -1,9 +1,13 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class LikesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
   async like(userId: string, tweetId: string) {
     const tweet = await this.prisma.tweet.findUnique({ where: { id: tweetId } });
@@ -15,11 +19,12 @@ export class LikesService {
       throw new ConflictException('Tweet déjà liké');
     }
 
-    if (tweet.authorId !== userId) {
-      await this.prisma.notification.create({
-        data: { type: 'LIKE', recipientId: tweet.authorId, actorId: userId, tweetId },
-      });
-    }
+    await this.notifications.create({
+      type: 'LIKE',
+      recipientId: tweet.authorId,
+      actorId: userId,
+      tweetId,
+    });
 
     return { success: true };
   }

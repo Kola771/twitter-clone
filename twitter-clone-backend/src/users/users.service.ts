@@ -73,6 +73,50 @@ export class UsersService {
     return users.map((u) => this.format(u as Record<string, unknown>, currentUserId));
   }
 
+  async getSuggestions(userId: string) {
+    const following = await this.prisma.follow.findMany({
+      where: { followerId: userId },
+      select: { followingId: true },
+    });
+    const excludeIds = [userId, ...following.map((f) => f.followingId)];
+
+    const users = await this.prisma.user.findMany({
+      where: { id: { notIn: excludeIds } },
+      select: this.userSelect(userId) as object,
+      orderBy: { followers: { _count: 'desc' } },
+      take: 3,
+    });
+    return users.map((u) => this.format(u as Record<string, unknown>, userId));
+  }
+
+  async getFollowers(username: string, currentUserId?: string) {
+    const target = await this.prisma.user.findUnique({ where: { username } });
+    if (!target) throw new NotFoundException('Utilisateur introuvable');
+
+    const follows = await this.prisma.follow.findMany({
+      where: { followingId: target.id },
+      orderBy: { createdAt: 'desc' },
+      select: { follower: { select: this.userSelect(currentUserId) as object } },
+    });
+    return follows.map((f) =>
+      this.format(f.follower as Record<string, unknown>, currentUserId),
+    );
+  }
+
+  async getFollowing(username: string, currentUserId?: string) {
+    const target = await this.prisma.user.findUnique({ where: { username } });
+    if (!target) throw new NotFoundException('Utilisateur introuvable');
+
+    const follows = await this.prisma.follow.findMany({
+      where: { followerId: target.id },
+      orderBy: { createdAt: 'desc' },
+      select: { following: { select: this.userSelect(currentUserId) as object } },
+    });
+    return follows.map((f) =>
+      this.format(f.following as Record<string, unknown>, currentUserId),
+    );
+  }
+
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     const updated = await this.prisma.user.update({
       where: { id: userId },

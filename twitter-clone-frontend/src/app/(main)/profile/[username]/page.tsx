@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useState } from 'react';
+import Link from 'next/link';
 import { useUser } from '@/hooks/useUsers';
 import { useUserTweets } from '@/hooks/useTweets';
 import { useAuth } from '@/hooks/useAuth';
@@ -84,14 +85,14 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
           {user.bio && <p className="mt-3 text-slate-200 leading-relaxed">{user.bio}</p>}
 
           <div className="flex gap-5 mt-4 text-sm">
-            <span>
+            <Link href={`/profile/${username}/following`} className="hover:underline">
               <strong className="text-slate-100">{formatCount(user.followingCount)}</strong>{' '}
               <span className="text-slate-400">Abonnements</span>
-            </span>
-            <span>
+            </Link>
+            <Link href={`/profile/${username}/followers`} className="hover:underline">
               <strong className="text-slate-100">{formatCount(user.followersCount)}</strong>{' '}
               <span className="text-slate-400">Abonnés</span>
-            </span>
+            </Link>
           </div>
         </div>
 

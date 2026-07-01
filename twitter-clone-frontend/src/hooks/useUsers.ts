@@ -19,6 +19,29 @@ export function useSearchUsers(query: string) {
   });
 }
 
+export function useSuggestions() {
+  return useQuery({
+    queryKey: ['user-suggestions'],
+    queryFn: () => api.get<User[]>('/users/suggestions').then((r) => r.data),
+  });
+}
+
+export function useFollowers(username: string) {
+  return useQuery({
+    queryKey: ['followers', username],
+    queryFn: () => api.get<User[]>(`/users/${username}/followers`).then((r) => r.data),
+    enabled: !!username,
+  });
+}
+
+export function useFollowing(username: string) {
+  return useQuery({
+    queryKey: ['following', username],
+    queryFn: () => api.get<User[]>(`/users/${username}/following`).then((r) => r.data),
+    enabled: !!username,
+  });
+}
+
 export function useFollowUser() {
   const qc = useQueryClient();
   return useMutation({
@@ -28,6 +51,7 @@ export function useFollowUser() {
         : api.post('/follows', { username }),
     onSuccess: (_, { username }) => {
       qc.invalidateQueries({ queryKey: ['user', username] });
+      qc.invalidateQueries({ queryKey: ['user-suggestions'] });
     },
   });
 }

@@ -1,6 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import Avatar from '@/components/ui/Avatar';
 import Spinner from '@/components/ui/Spinner';
@@ -31,10 +32,17 @@ const typeIcons: Record<Notification['type'], React.ReactNode> = {
 };
 
 export default function NotificationsPage() {
+  const queryClient = useQueryClient();
   const { data: notifications, isLoading } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => api.get<Notification[]>('/notifications').then((r) => r.data),
   });
+
+  useEffect(() => {
+    if (notifications) {
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+    }
+  }, [notifications, queryClient]);
 
   return (
     <div>

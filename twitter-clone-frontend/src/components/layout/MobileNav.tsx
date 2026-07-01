@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
+import { useUnreadCount } from '@/hooks/useNotifications';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -47,6 +48,7 @@ const navItems = [
 export default function MobileNav() {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
+  const { data: unreadCount = 0 } = useUnreadCount();
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-slate-950/95 backdrop-blur-sm border-t border-slate-800 flex items-center justify-around px-2 py-1 safe-area-bottom">
@@ -66,7 +68,14 @@ export default function MobileNav() {
               active ? 'text-sky-400' : 'text-slate-400 hover:text-slate-200'
             )}
           >
-            {icon(active)}
+            <span className="relative">
+              {icon(active)}
+              {href === '/notifications' && unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-500 px-1 text-[10px] font-bold text-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </span>
             <span className="text-[10px] font-medium">{label}</span>
           </Link>
         );

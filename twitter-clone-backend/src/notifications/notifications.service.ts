@@ -1,9 +1,47 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsGateway } from './notifications.gateway';
+
+type NotificationType = 'LIKE' | 'RETWEET' | 'FOLLOW' | 'REPLY';
 
 @Injectable()
 export class NotificationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private gateway: NotificationsGateway,
+  ) {}
+
+  async create(data: {
+    type: NotificationType;
+    recipientId: string;
+    actorId: string;
+    tweetId?: string;
+  }) {
+    if (data.recipientId === data.actorId) return null;
+
+    const notif = await this.prisma.notification
+      .create({
+        data,
+        include: {
+          actor: { select: { id: true, username: true, name: true, avatarUrl: true } },
+          tweet: { select: { id: true, content: true } },
+        },
+      })
+      .catch(() => null);
+
+    if (!notif) return null;
+
+    this.gateway.emitToUser(data.recipientId, {
+      id: notif.id,
+      type: notif.type.toLowerCase(),
+      actor: notif.actor,
+      tweetId: notif.tweetId,
+      isRead: notif.isRead,
+      createdAt: notif.createdAt,
+    });
+
+    return notif;
+  }
 
   async findAll(userId: string) {
     const notifs = await this.prisma.notification.findMany({

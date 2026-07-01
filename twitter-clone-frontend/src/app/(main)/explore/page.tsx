@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useExploreTweets } from '@/hooks/useTweets';
 import { useSearchUsers } from '@/hooks/useUsers';
@@ -13,6 +13,10 @@ export default function ExplorePage() {
   const searchParams = useSearchParams();
   const initialQ = searchParams.get('q') ?? '';
   const [query, setQuery] = useState(initialQ);
+
+  useEffect(() => {
+    setQuery(searchParams.get('q') ?? '');
+  }, [searchParams]);
 
   const { data: tweets, isLoading: loadingTweets } = useExploreTweets(query);
   const { data: users, isLoading: loadingUsers } = useSearchUsers(query);
@@ -39,7 +43,7 @@ export default function ExplorePage() {
       </header>
 
       {query.length < 2 ? (
-        <div className="py-16 text-center text-slate-400">
+        <div className="py-16 px-4 md:px-0 text-center text-slate-400">
           <p>Tape pour rechercher des tweets ou des utilisateurs.</p>
         </div>
       ) : (

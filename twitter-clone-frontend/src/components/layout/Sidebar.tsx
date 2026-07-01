@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
+import { useUnreadCount } from '@/hooks/useNotifications';
 import Avatar from '@/components/ui/Avatar';
 import { cn } from '@/lib/utils';
 
@@ -50,6 +51,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const { data: unreadCount = 0 } = useUnreadCount();
 
   function handleLogout() {
     logout();
@@ -82,7 +84,14 @@ export default function Sidebar() {
                 active && 'font-bold'
               )}
             >
-              {icon(active)}
+              <span className="relative">
+                {icon(active)}
+                {href === '/notifications' && unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-500 px-1 text-[10px] font-bold text-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </span>
               <span className="hidden xl:block text-base">{label}</span>
             </Link>
           );

@@ -41,3 +41,15 @@ export function useExploreTweets(query: string) {
     enabled: query.length >= 2,
   });
 }
+
+export interface Trend {
+  tag: string;
+  count: number;
+}
+
+export function useTrends() {
+  return useQuery({
+    queryKey: ['trends'],
+    queryFn: () => api.get<Trend[]>('/tweets/trends').then((r) => r.data),
+  });
+}

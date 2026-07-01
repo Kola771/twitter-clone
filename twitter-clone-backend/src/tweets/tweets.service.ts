@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateTweetDto } from './dto/create-tweet.dto';
 
 @Injectable()
 export class TweetsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
   private tweetInclude(userId: string) {
     return {
@@ -59,17 +63,14 @@ export class TweetsService {
       include: this.tweetInclude(userId) as object,
     });
 
-    // Notification si reply
     if (dto.replyToId) {
       const parent = await this.prisma.tweet.findUnique({ where: { id: dto.replyToId } });
-      if (parent && parent.authorId !== userId) {
-        await this.prisma.notification.create({
-          data: {
-            type: 'REPLY',
-            recipientId: parent.authorId,
-            actorId: userId,
-            tweetId: tweet.id,
-          },
+      if (parent) {
+        await this.notifications.create({
+          type: 'REPLY',
+          recipientId: parent.authorId,
+          actorId: userId,
+          tweetId: tweet.id,
         });
       }
     }
@@ -127,6 +128,33 @@ export class TweetsService {
     return tweets.map((t) => this.format(t as Record<string, unknown>));
   }
 
+  async getTrends() {
+    const tweets = await this.prisma.tweet.findMany({
+      where: { content: { contains: '#' } },
+      select: { content: true },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+    });
+
+    const counts = new Map<string, number>();
+    const hashtagRegex = /#(\w+)/g;
+
+    for (const tweet of tweets) {
+      const seen = new Set<string>();
+      for (const match of tweet.content.matchAll(hashtagRegex)) {
+        const tag = match[1].toLowerCase();
+        if (seen.has(tag)) continue;
+        seen.add(tag);
+        counts.set(tag, (counts.get(tag) ?? 0) + 1);
+      }
+    }
+
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([tag, count]) => ({ tag, count }));
+  }
+
   async search(q: string, userId: string) {
     const tweets = await this.prisma.tweet.findMany({
       where: { content: { contains: q, mode: 'insensitive' } },
@@ -140,7 +168,15 @@ export class TweetsService {
   async delete(id: string, userId: string) {
     const tweet = await this.prisma.tweet.findUnique({ where: { id } });
     if (!tweet) throw new NotFoundException('Tweet introuvable');
-    if (tweet.authorId !== userId) throw new ForbiddenException();
+
+    const isOwnTweet = tweet.authorId === userId;
+    let isParentAuthor = false;
+    if (!isOwnTweet && tweet.replyToId) {
+      const parent = await this.prisma.tweet.findUnique({ where: { id: tweet.replyToId } });
+      isParentAuthor = parent?.authorId === userId;
+    }
+    if (!isOwnTweet && !isParentAuthor) throw new ForbiddenException();
+
     await this.prisma.tweet.delete({ where: { id } });
     return { success: true };
   }

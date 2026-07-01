@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class FollowsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
   async follow(followerId: string, username: string) {
     const target = await this.prisma.user.findUnique({ where: { username } });
@@ -16,12 +20,11 @@ export class FollowsService {
       update: {},
     });
 
-    // Notification (ignore si déjà existante)
-    await this.prisma.notification
-      .create({
-        data: { type: 'FOLLOW', recipientId: target.id, actorId: followerId },
-      })
-      .catch(() => null);
+    await this.notifications.create({
+      type: 'FOLLOW',
+      recipientId: target.id,
+      actorId: followerId,
+    });
 
     return { success: true };
   }
